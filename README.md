@@ -9,7 +9,7 @@
 ## 一键脚本
 - 推荐Socks5 hysteria2 nohup模式
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/LQwbd/serv00-hy2/main/install-socks5-hysteria.sh)
+bash <(curl -s https://raw.githubusercontent.com/LQ-wbd/serv00-hy2/main/install-socks5-hysteria.sh)
 ```
 
 
