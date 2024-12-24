@@ -178,7 +178,7 @@ install_hysteria() {
   generate_cert
   generate_config
   run_files
-  get_ip
+  getUnblockIP
   get_ipinfo
   print_config
 }
