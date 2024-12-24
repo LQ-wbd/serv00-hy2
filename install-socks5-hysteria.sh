@@ -134,7 +134,7 @@ get_ipinfo() {
 }
 
 print_config() {
-    local hy2_ip=$getUnblockIP
+    local hy2_ip=$ip
     local server_port=$SERVER_PORT
     local password=$PASSWORD
 
