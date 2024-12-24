@@ -103,21 +103,37 @@ run_files() {
 }
 
 # 获取IP地址函数
-get_ip() {
-  ipv4=$(curl -s 4.ipw.cn)
-  if [[ -n "$ipv4" ]]; then
-    HOST_IP="$ipv4"
-  else
-    ipv6=$(curl -s --max-time 1 6.ipw.cn)
-    if [[ -n "$ipv6" ]]; then
-      HOST_IP="$ipv6"
-    else
-      echo -e "\e[1;35m无法获取IPv4或IPv6地址\033[0m"
-      exit 1
+getUnblockIP(){
+  local hostname=$(hostname)
+  local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
+  local hosts=("cache${host_number}.serv00.com" "web${host_number}.serv00.com" "$hostname")
+
+  yellow "----------------------------------------------"
+  green "  主机名称          |      IP        |  状态"
+  yellow "----------------------------------------------"
+  # 遍历主机名称数组
+  for host in "${hosts[@]}"; do
+    # 获取 API 返回的数据
+    local response=$(curl -s "https://ss.botai.us.kg/api/getip?host=$host")
+
+    # 检查返回的结果是否包含 "not found"
+    if [[ "$response" =~ "not found" ]]; then
+      echo "未识别主机${host}, 请联系作者饭奇骏!"
+      return
     fi
-  fi
-  echo -e "\e[1;32m本机IP: $HOST_IP\033[0m"
+    local ip=$(echo "$response" | awk -F "|" '{print $1 }')
+    local status=$(echo "$response" | awk -F "|" '{print $2 }')
+    printf "%-20s | %-15s | %-10s\n" "$host" "$ip" "$status"   
+  done
+    
 }
+
+hy2_ip=$(get_ip)
+if [[ -n "$hy2_ip" ]]; then
+green "选中未封ip为 $hy2_ip"
+else
+red "未能找到未封IP,保持默认值！"
+fi
 
 # 获取网络信息函数
 get_ipinfo() {
@@ -129,16 +145,16 @@ print_config() {
   echo -e "\e[1;32mHysteria2 安装成功\033[0m"
   echo ""
   echo -e "\e[1;33mV2rayN或Nekobox 配置\033[0m"
-  echo -e "\e[1;32mhysteria2://$PASSWORD@$HOST_IP:$SERVER_PORT/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
+  echo -e "\e[1;32mhysteria2://$PASSWORD@$hy2_ip:$SERVER_PORT/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
   echo ""
   echo -e "\e[1;33mSurge 配置\033[0m"
-  echo -e "\e[1;32mserv00 = hysteria2, $HOST_IP, $SERVER_PORT, password = $PASSWORD, skip-cert-verify=true, sni=www.bing.com\033[0m"
+  echo -e "\e[1;32mserv00 = hysteria2, $hy2_ip, $SERVER_PORT, password = $PASSWORD, skip-cert-verify=true, sni=www.bing.com\033[0m"
   echo ""
   echo -e "\e[1;33mClash 配置\033[0m"
   cat << EOF
 - name: serv00
   type: hysteria2
-  server: $HOST_IP
+  server: $hy2_ip
   port: $SERVER_PORT
   password: $PASSWORD
   alpn:
