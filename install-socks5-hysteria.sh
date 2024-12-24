@@ -110,18 +110,22 @@ getUnblockIP(){
 
     for host in "${hosts[@]}"; do
         local response=$(curl -s "https://ss.botai.us.kg/api/getip?host=$host")
-        if [[ "$response" =~ "not found" ]]; then
+        if [[ -z "$response" ]]; then
+            echo "Error: Empty response from API"
             continue
         fi
-        local ip=$(echo "$response" | awk -F "|" '{print $1 }')
-        local status=$(echo "$response" | awk -F "|" '{print $2 }')
-        if [[ "$status" == "unblocked" ]]; then
+
+        local ip=$(echo "$response" | awk -F "|" '{print $1}')
+        local status=$(echo "$response" | awk -F "|" '{print $2}')
+        if [[ "$status" == "unblocked" && "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
             echo "$ip"
             return
         fi
     done
+    echo "No unblocked IP found"
     echo ""
 }
+
 
 get_ipinfo() {
     local response=$(curl -s https://speed.cloudflare.com/meta)
