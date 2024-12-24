@@ -104,59 +104,55 @@ run_files() {
 
 # 获取IP地址函数
 getUnblockIP(){
-  local hostname=$(hostname)
-  local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
-  local hosts=("cache${host_number}.serv00.com" "web${host_number}.serv00.com" "$hostname")
+    local hostname=$(hostname)
+    local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
+    local hosts=("cache${host_number}.serv00.com" "web${host_number}.serv00.com" "$hostname")
 
-  yellow "----------------------------------------------"
-  green "  主机名称          |      IP        |  状态"
-  yellow "----------------------------------------------"
-  # 遍历主机名称数组
-  for host in "${hosts[@]}"; do
-    # 获取 API 返回的数据
-    local response=$(curl -s "https://ss.botai.us.kg/api/getip?host=$host")
-
-    # 检查返回的结果是否包含 "not found"
-    if [[ "$response" =~ "not found" ]]; then
-      echo "未识别主机${host}, 请联系作者饭奇骏!"
-      return
-    fi
-    local ip=$(echo "$response" | awk -F "|" '{print $1 }')
-    local status=$(echo "$response" | awk -F "|" '{print $2 }')
-    printf "%-20s | %-15s | %-10s\n" "$host" "$ip" "$status"   
-  done
-    
+    for host in "${hosts[@]}"; do
+        local response=$(curl -s "https://ss.botai.us.kg/api/getip?host=$host")
+        if [[ "$response" =~ "not found" ]]; then
+            continue
+        fi
+        local ip=$(echo "$response" | awk -F "|" '{print $1 }')
+        local status=$(echo "$response" | awk -F "|" '{print $2 }')
+        if [[ "$status" == "unblocked" ]]; then
+            echo "$ip"
+            return
+        fi
+    done
+    echo ""
 }
 
-hy2_ip=$(getUnblockIP)
-if [[ -n "$hy2_ip" ]]; then
-green "选中未封ip为 $hy2_ip"
-else
-red "未能找到未封IP,保持默认值！"
-fi
-
-# 获取网络信息函数
 get_ipinfo() {
-  ISP=$(curl -s https://speed.cloudflare.com/meta | awk -F\" '{print $26"-"$18}' | sed -e 's/ /_/g')
+    local response=$(curl -s https://speed.cloudflare.com/meta)
+    if [[ -n "$response" ]]; then
+        ISP=$(echo "$response" | awk -F\" '{print $26"-"$18}' | sed -e 's/ /_/g')
+    else
+        red "无法获取网络信息，请检查网络或重试！"
+        ISP="unknown"
+    fi
 }
 
-# 输出配置函数
 print_config() {
-  echo -e "\e[1;32mHysteria2 安装成功\033[0m"
-  echo ""
-  echo -e "\e[1;33mV2rayN或Nekobox 配置\033[0m"
-  echo -e "\e[1;32mhysteria2://$PASSWORD@$hy2_ip:$SERVER_PORT/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
-  echo ""
-  echo -e "\e[1;33mSurge 配置\033[0m"
-  echo -e "\e[1;32mserv00 = hysteria2, $hy2_ip, $SERVER_PORT, password = $PASSWORD, skip-cert-verify=true, sni=www.bing.com\033[0m"
-  echo ""
-  echo -e "\e[1;33mClash 配置\033[0m"
-  cat << EOF
+    local hy2_ip="$1"
+    local server_port="$2"
+    local password="$3"
+
+    echo -e "\e[1;32mHysteria2 安装成功\033[0m"
+    echo ""
+    echo -e "\e[1;33mV2rayN或Nekobox 配置\033[0m"
+    echo -e "\e[1;32mhysteria2://$password@$hy2_ip:$server_port/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
+    echo ""
+    echo -e "\e[1;33mSurge 配置\033[0m"
+    echo -e "\e[1;32mserv00 = hysteria2, $hy2_ip, $server_port, password = $password, skip-cert-verify=true, sni=www.bing.com\033[0m"
+    echo ""
+    echo -e "\e[1;33mClash 配置\033[0m"
+    cat << EOF
 - name: serv00
   type: hysteria2
   server: $hy2_ip
-  port: $SERVER_PORT
-  password: $PASSWORD
+  port: $server_port
+  password: $password
   alpn:
     - h3
   sni: www.bing.com
