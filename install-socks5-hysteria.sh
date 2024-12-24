@@ -128,7 +128,7 @@ getUnblockIP(){
     
 }
 
-hy2_ip=$(get_ip)
+hy2_ip=$(getUnblockIP)
 if [[ -n "$hy2_ip" ]]; then
 green "选中未封ip为 $hy2_ip"
 else
