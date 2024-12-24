@@ -134,9 +134,9 @@ get_ipinfo() {
 }
 
 print_config() {
-    local hy2_ip="$getUnblockIP"
-    local server_port="$SERVER_PORT"
-    local password="$PASSWORD"
+    local hy2_ip=$getUnblockIP
+    local server_port=$SERVER_PORT
+    local password=$PASSWORD
 
     echo -e "\e[1;32mHysteria2 安装成功\033[0m"
     echo ""
