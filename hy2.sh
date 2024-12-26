@@ -192,9 +192,9 @@ install_hysteria() {
   download_dependencies
   generate_cert
   generate_config
+  get_default_webip
+  getUnblockIP
   run_files
-  get_ip
-  get_ipinfo
   print_config
 }
 
