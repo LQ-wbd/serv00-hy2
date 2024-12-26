@@ -103,26 +103,57 @@ run_files() {
 }
 
 # 获取IP地址函数
-get_ip() {
-  ipv4=$(curl -s 4.ipw.cn)
-  if [[ -n "$ipv4" ]]; then
-    HOST_IP="$ipv4"
-  else
-    ipv6=$(curl -s --max-time 1 6.ipw.cn)
-    if [[ -n "$ipv6" ]]; then
-      HOST_IP="$ipv6"
+
+get_default_webip() {
+    local host="$(hostname | cut -d '.' -f 1)"
+    local sno="${host//[^0-9]/}"        # 提取数字部分
+    local web_key="web${sno}"          # 拼接关键字 webN
+    local webIp=$(devil vhost list public | grep "$web_key" | awk '{print $1}')
+
+    if [[ -n "$webIp" ]]; then
+        echo "$webIp"
     else
-      echo -e "\e[1;35m无法获取IPv4或IPv6地址\033[0m"
-      exit 1
+        echo "No matching Web IP found, please check configuration." >&2
+        return 1
     fi
-  fi
-  echo -e "\e[1;32m本机IP: $HOST_IP\033[0m"
 }
 
-# 获取网络信息函数
-get_ipinfo() {
-  ISP=$(curl -s https://speed.cloudflare.com/meta | awk -F\" '{print $26"-"$18}' | sed -e 's/ /_/g')
+
+getUnblockIP() {
+    local hostname=$(hostname)
+    local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
+    local hosts=("cache${host_number}.serv00.com" "web${host_number}.serv00.com" "$hostname")
+
+    yellow "----------------------------------------------"
+    green "  主机名称          |      IP        |  状态"
+    yellow "----------------------------------------------"
+
+    for host in "${hosts[@]}"; do
+        # 调用 API 获取数据
+        local response=$(curl -s "https://ss.botai.us.kg/api/getip?host=$host")
+
+        # 检查 API 请求的有效性
+        if [[ -z "$response" ]]; then
+            red "无法从 API 获取响应，检查网络连接或 API 服务。"
+            continue
+        fi
+
+        # 检查结果中是否包含 "not found"
+        if [[ "$response" =~ "not found" ]]; then
+            red "未识别主机 $host, 请联系作者饭奇骏!"
+            continue
+        fi
+
+        # 解析 API 响应
+        local ip=$(echo "$response" | awk -F "|" '{print $1}')
+        local status=$(echo "$response" | awk -F "|" '{print $2}')
+        
+        # 格式化输出
+        printf "%-20s | %-15s | %-10s\n" "$host" "$ip" "$status"
+    done
 }
+
+
 
 # 输出配置函数
 print_config() {
