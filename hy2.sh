@@ -153,6 +153,8 @@ getUnblockIP() {
     done
 }
 
+hy2_ip=$(get_ip)
+
 
 
 # 输出配置函数
@@ -160,16 +162,16 @@ print_config() {
   echo -e "\e[1;32mHysteria2 安装成功\033[0m"
   echo ""
   echo -e "\e[1;33mV2rayN或Nekobox 配置\033[0m"
-  echo -e "\e[1;32mhysteria2://$PASSWORD@$getUnblockIP:$SERVER_PORT/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
+  echo -e "\e[1;32mhysteria2://$PASSWORD@$hy2_ip:$SERVER_PORT/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
   echo ""
   echo -e "\e[1;33mSurge 配置\033[0m"
-  echo -e "\e[1;32mserv00 = hysteria2, $getUnblockIP, $SERVER_PORT, password = $PASSWORD, skip-cert-verify=true, sni=www.bing.com\033[0m"
+  echo -e "\e[1;32mserv00 = hysteria2, $hy2_ip, $SERVER_PORT, password = $PASSWORD, skip-cert-verify=true, sni=www.bing.com\033[0m"
   echo ""
   echo -e "\e[1;33mClash 配置\033[0m"
   cat << EOF
 - name: serv00
   type: hysteria2
-  server: $getUnblockIP
+  server: $hy2_ip
   port: $SERVER_PORT
   password: $PASSWORD
   alpn:
@@ -184,7 +186,7 @@ EOF
 cleanup() {
   rm -rf "$HYSTERIA_WORKDIR/web" "$HYSTERIA_WORKDIR/config.yaml"
 }
-
+     
 # 安装 Hysteria
 install_hysteria() {
   generate_password
