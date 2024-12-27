@@ -124,56 +124,59 @@ getUnblockIP() {
     local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
     local hosts=("cache${host_number}.serv00.com" "web${host_number}.serv00.com" "$hostname")
 
-    yellow "----------------------------------------------"
-    green "  主机名称          |      IP        |  状态"
-    yellow "----------------------------------------------"
-
     for host in "${hosts[@]}"; do
         # 调用 API 获取数据
         local response=$(curl -s "https://ss.botai.us.kg/api/getip?host=$host")
 
         # 检查 API 请求的有效性
         if [[ -z "$response" ]]; then
-            red "无法从 API 获取响应，检查网络连接或 API 服务。"
+            echo "API响应失败，请检查服务或网络" >&2
             continue
         fi
 
-        # 检查结果中是否包含 "not found"
+        # 检查结果是否包含 "not found"
         if [[ "$response" =~ "not found" ]]; then
-            red "未识别主机 $host, 请联系作者饭奇骏!"
+            echo "未识别主机 $host，跳过" >&2
             continue
         fi
 
-        # 解析 API 响应
+        # 提取 IP 和状态信息
         local ip=$(echo "$response" | awk -F "|" '{print $1}')
         local status=$(echo "$response" | awk -F "|" '{print $2}')
-        
-        # 格式化输出
-        printf "%-20s | %-15s | %-10s\n" "$host" "$ip" "$status"
+
+        # 如果状态是 unblocked，返回 IP 并结束
+        if [[ "$status" == "unblocked" ]]; then
+            echo "$ip"
+            return 0
+        fi
     done
+
+    # 如果所有主机都没有有效 IP，返回默认值
+    echo "127.0.0.1"
+    return 1
 }
 
-hy2_ip=$(ip)
+hy2_ip=$(getUnblockIP)
 
 
 
 # 输出配置函数
 print_config() {
-  echo -e "\e[1;32mHysteria2 安装成功\033[0m"
-  echo ""
-  echo -e "\e[1;33mV2rayN或Nekobox 配置\033[0m"
-  echo -e "\e[1;32mhysteria2://$PASSWORD@$hy2_ip:$SERVER_PORT/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
-  echo ""
-  echo -e "\e[1;33mSurge 配置\033[0m"
-  echo -e "\e[1;32mserv00 = hysteria2, $hy2_ip, $SERVER_PORT, password = $PASSWORD, skip-cert-verify=true, sni=www.bing.com\033[0m"
-  echo ""
-  echo -e "\e[1;33mClash 配置\033[0m"
-  cat << EOF
+    echo -e "\e[1;32mHysteria2 安装成功\033[0m"
+    echo ""
+    echo -e "\e[1;33mV2rayN 或 Nekobox 配置\033[0m"
+    echo -e "\e[1;32mhysteria2://${PASSWORD}@${hy2_ip}:${SERVER_PORT}/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
+    echo ""
+    echo -e "\e[1;33mSurge 配置\033[0m"
+    echo -e "\e[1;32mserv00 = hysteria2, ${hy2_ip}, ${SERVER_PORT}, password=${PASSWORD}, skip-cert-verify=true, sni=www.bing.com\033[0m"
+    echo ""
+    echo -e "\e[1;33mClash 配置\033[0m"
+    cat << EOF
 - name: serv00
   type: hysteria2
-  server: $hy2_ip
-  port: $SERVER_PORT
-  password: $PASSWORD
+  server: ${hy2_ip}
+  port: ${SERVER_PORT}
+  password: ${PASSWORD}
   alpn:
     - h3
   sni: www.bing.com
@@ -189,16 +192,25 @@ cleanup() {
      
 # 安装 Hysteria
 install_hysteria() {
-  generate_password
-  set_server_port
-  download_dependencies
-  generate_cert
-  generate_config
-  get_default_webip
-  getUnblockIP
-  run_files
-  print_config
+    generate_password
+    set_server_port
+    download_dependencies
+    generate_cert
+    generate_config
+    get_default_webip
+    
+    # 获取可用 IP
+    hy2_ip=$(getUnblockIP)
+    
+    # 检查 IP 获取结果
+    if [[ "$hy2_ip" == "127.0.0.1" ]]; then
+        red "警告：未能找到可用的 Unblock IP！将使用默认值 127.0.0.1。"
+    fi
+
+    run_files
+    print_config
 }
+
 
 # 安装和配置 socks5
 socks5_config(){
