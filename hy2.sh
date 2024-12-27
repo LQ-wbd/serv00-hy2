@@ -150,12 +150,7 @@ getUnblockIP() {
         
         # 格式化输出
         printf "%-20s | %-15s | %-10s\n" "$host" "$ip" "$status"
-
-        # 返回第一个有效的 IP
-        if [[ "$status" == "unblocked" ]]; then
-            echo "$ip"
-            return 0
-        fi
+    done
 }
 
 
