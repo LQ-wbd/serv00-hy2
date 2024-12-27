@@ -124,36 +124,33 @@ getUnblockIP() {
     local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
     local hosts=("cache${host_number}.serv00.com" "web${host_number}.serv00.com" "$hostname")
 
+    yellow "----------------------------------------------"
+    green "  主机名称          |      IP        |  状态"
+    yellow "----------------------------------------------"
+
     for host in "${hosts[@]}"; do
         # 调用 API 获取数据
         local response=$(curl -s "https://ss.botai.us.kg/api/getip?host=$host")
 
         # 检查 API 请求的有效性
         if [[ -z "$response" ]]; then
-            echo "API响应失败，请检查服务或网络" >&2
+            red "无法从 API 获取响应，检查网络连接或 API 服务。"
             continue
         fi
 
-        # 检查结果是否包含 "not found"
+        # 检查结果中是否包含 "not found"
         if [[ "$response" =~ "not found" ]]; then
-            echo "未识别主机 $host，跳过" >&2
+            red "未识别主机 $host, 请联系作者饭奇骏!"
             continue
         fi
 
-        # 提取 IP 和状态信息
+        # 解析 API 响应
         local ip=$(echo "$response" | awk -F "|" '{print $1}')
         local status=$(echo "$response" | awk -F "|" '{print $2}')
-
-        # 如果状态是 unblocked，返回 IP 并结束
-        if [[ "$status" == "unblocked" ]]; then
-            echo "$ip"
-            return 0
-        fi
+        
+        # 格式化输出
+        printf "%-20s | %-15s | %-10s\n" "$host" "$ip" "$status"
     done
-
-    # 如果所有主机都没有有效 IP，返回默认值
-    echo "128.204.223.119"
-    return 1
 }
 
 hy2_ip=$(getUnblockIP)
