@@ -103,77 +103,44 @@ run_files() {
 }
 
 # 获取IP地址函数
-
-get_default_webip() {
-    local host="$(hostname | cut -d '.' -f 1)"
-    local sno="${host//[^0-9]/}"        # 提取数字部分
-    local web_key="web${sno}"          # 拼接关键字 webN
-    local webIp=$(devil vhost list public | grep "$web_key" | awk '{print $1}')
-
-    if [[ -n "$webIp" ]]; then
-        echo "$webIp"
+get_ip() {
+  ipv4=$(curl -s 4.ipw.cn)
+  if [[ -n "$ipv4" ]]; then
+    HOST_IP="$ipv4"
+  else
+    ipv6=$(curl -s --max-time 1 6.ipw.cn)
+    if [[ -n "$ipv6" ]]; then
+      HOST_IP="$ipv6"
     else
-        echo "No matching Web IP found, please check configuration." >&2
-        return 1
+      echo -e "\e[1;35m无法获取IPv4或IPv6地址\033[0m"
+      exit 1
     fi
+  fi
+  echo -e "\e[1;32m本机IP: $HOST_IP\033[0m"
 }
 
-
-getUnblockIP() {
-    local hostname=$(hostname)
-    local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
-    local hosts=("cache${host_number}.serv00.com" "web${host_number}.serv00.com" "$hostname")
-
-    yellow "----------------------------------------------"
-    green "  主机名称          |      IP        |  状态"
-    yellow "----------------------------------------------"
-
-    for host in "${hosts[@]}"; do
-        # 调用 API 获取数据
-        local response=$(curl -s "https://ss.botai.us.kg/api/getip?host=$host")
-
-        # 检查 API 请求的有效性
-        if [[ -z "$response" ]]; then
-            red "无法从 API 获取响应，检查网络连接或 API 服务。"
-            continue
-        fi
-
-        # 检查结果中是否包含 "not found"
-        if [[ "$response" =~ "not found" ]]; then
-            red "未识别主机 $host, 请联系作者饭奇骏!"
-            continue
-        fi
-
-        # 解析 API 响应
-        local ip=$(echo "$response" | awk -F "|" '{print $1}')
-        local status=$(echo "$response" | awk -F "|" '{print $2}')
-        
-        # 格式化输出
-        printf "%-20s | %-15s | %-10s\n" "$host" "$ip" "$status"
-    done
+# 获取网络信息函数
+get_ipinfo() {
+  ISP=$(curl -s https://speed.cloudflare.com/meta | awk -F\" '{print $26"-"$18}' | sed -e 's/ /_/g')
 }
-
-hy2_ip=$(getUnblockIP)
-
-
 
 # 输出配置函数
 print_config() {
-    echo -e "\e[1;32mHysteria2 安装成功\033[0m"
-    echo ""
-    echo -e "\e[1;33mV2rayN 或 Nekobox 配置\033[0m"
-    echo -e "\e[1;32mhysteria2://${PASSWORD}@${hy2_ip}:${SERVER_PORT}/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
-    echo ""
-    echo -e "\e[1;33mSurge 配置\033[0m"
-    echo -e "\e[1;32mserv00 = hysteria2, ${hy2_ip}, ${SERVER_PORT}, password=${PASSWORD}, skip-cert-verify=true, sni=www.bing.com\033[0m"
-    echo ""
-    echo -e "\e[1;33mClash 配置\033[0m"
-    cat << EOF
+  echo -e "\e[1;32mHysteria2 安装成功\033[0m"
+  echo ""
+  echo -e "\e[1;33mV2rayN或Nekobox 配置\033[0m"
+  echo -e "\e[1;32mhysteria2://$PASSWORD@$HOST_IP:$SERVER_PORT/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
+  echo ""
+  echo -e "\e[1;33mSurge 配置\033[0m"
+  echo -e "\e[1;32mserv00 = hysteria2, $HOST_IP, $SERVER_PORT, password = $PASSWORD, skip-cert-verify=true, sni=www.bing.com\033[0m"
+  echo ""
+  echo -e "\e[1;33mClash 配置\033[0m"
+  cat << EOF
 - name: serv00
   type: hysteria2
-  server: ${hy2_ip}
-  port: ${SERVER_PORT}
-  password: ${PASSWORD}
+  server: $HOST_IP
+  port: $SERVER_PORT
+  password: $PASSWORD
   alpn:
     - h3
   sni: www.bing.com
@@ -186,28 +153,19 @@ EOF
 cleanup() {
   rm -rf "$HYSTERIA_WORKDIR/web" "$HYSTERIA_WORKDIR/config.yaml"
 }
-     
+
 # 安装 Hysteria
 install_hysteria() {
-    generate_password
-    set_server_port
-    download_dependencies
-    generate_cert
-    generate_config
-    get_default_webip
-    
-    # 获取可用 IP
-    hy2_ip=$(getUnblockIP)
-    
-    # 检查 IP 获取结果
-    if [[ "$hy2_ip" == "127.0.0.1" ]]; then
-        red "警告：未能找到可用的 Unblock IP！将使用默认值 127.0.0.1。"
-    fi
-
-    run_files
-    print_config
+  generate_password
+  set_server_port
+  download_dependencies
+  generate_cert
+  generate_config
+  run_files
+  get_ip
+  get_ipinfo
+  print_config
 }
-
 
 # 安装和配置 socks5
 socks5_config(){
