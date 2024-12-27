@@ -153,7 +153,7 @@ getUnblockIP() {
     done
 }
 
-hy2_ip=$(getUnblockIP)
+hy2_ip=$(ip)
 
 
 
