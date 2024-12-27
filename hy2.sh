@@ -150,30 +150,37 @@ getUnblockIP() {
         
         # 格式化输出
         printf "%-20s | %-15s | %-10s\n" "$host" "$ip" "$status"
-    done
+
+        # 返回第一个有效的 IP
+        if [[ "$status" == "unblocked" ]]; then
+            echo "$ip"
+            return 0
+        fi
 }
 
-hy2_ip=$(ip)
 
 
+
+# 动态获取 IP
+hy2_ip=$(getUnblockIP)
 
 # 输出配置函数
 print_config() {
-  echo -e "\e[1;32mHysteria2 安装成功\033[0m"
-  echo ""
-  echo -e "\e[1;33mV2rayN或Nekobox 配置\033[0m"
-  echo -e "\e[1;32mhysteria2://$PASSWORD@$hy2_ip:$SERVER_PORT/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m"
-  echo ""
-  echo -e "\e[1;33mSurge 配置\033[0m"
-  echo -e "\e[1;32mserv00 = hysteria2, $hy2_ip, $SERVER_PORT, password = $PASSWORD, skip-cert-verify=true, sni=www.bing.com\033[0m"
-  echo ""
-  echo -e "\e[1;33mClash 配置\033[0m"
+  echo -e "\e[1;32mHysteria2 安装成功\033[0m\n"
+  
+  echo -e "\e[1;33mV2rayN 或 Nekobox 配置：\033[0m"
+  echo -e "\e[1;32mhysteria2://${PASSWORD}@${hy2_ip}:${SERVER_PORT}/?sni=www.bing.com&alpn=h3&insecure=1#serv00\033[0m\n"
+  
+  echo -e "\e[1;33mSurge 配置：\033[0m"
+  echo -e "\e[1;32mserv00 = hysteria2, ${hy2_ip}, ${SERVER_PORT}, password=${PASSWORD}, skip-cert-verify=true, sni=www.bing.com\033[0m\n"
+
+  echo -e "\e[1;33mClash 配置：\033[0m"
   cat << EOF
 - name: serv00
   type: hysteria2
-  server: $hy2_ip
-  port: $SERVER_PORT
-  password: $PASSWORD
+  server: ${hy2_ip}
+  port: ${SERVER_PORT}
+  password: ${PASSWORD}
   alpn:
     - h3
   sni: www.bing.com
@@ -181,6 +188,7 @@ print_config() {
   fast-open: true
 EOF
 }
+
 
 # 删除临时文件函数
 cleanup() {
