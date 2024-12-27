@@ -152,7 +152,7 @@ getUnblockIP() {
     done
 
     # 如果所有主机都没有有效 IP，返回默认值
-    echo "127.0.0.1"
+    echo "128.204.223.119"
     return 1
 }
 
